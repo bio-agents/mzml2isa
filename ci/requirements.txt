@@ -1,0 +1,8 @@
+coverage
+codecov
+green
+pip
+setupagents
+wheel
+twine
+pyinstaller>=3.6 ; sys_platform == 'win32'

@@ -1,0 +1,63 @@
+environment:
+  matrix:
+    #- PYTHON: "C:\\Python27"
+    #  MAKE_WINEX: 0
+    #- PYTHON: "C:\\Python35"
+    #  MAKE_WINEX: 1
+    - PYTHON: "C:\\Python37-x64"
+      MAKE_WINEX: 1
+
+install:
+  - '%PYTHON%\python.exe -m pip install -U -r ci\requirements.txt'
+  #- if %MAKE_WINEX%==1 %PYTHON%\Scripts\pip.exe install pyinstaller
+
+build_script:
+  - '%PYTHON%\python.exe -m pip install .'
+  - if %MAKE_WINEX%==1	cd  ci\appveyor
+  - if %MAKE_WINEX%==1	%PYTHON%\Scripts\pyinstaller.exe mzml2isa_cli.spec mzml2isa_cli.py
+  - if %MAKE_WINEX%==1  cd ..\..
+
+# test_script:
+#   - mkdir data
+#   - cd data
+#   - ps: wget http://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/MTBLS267/Person01_RBC_youth_NEG.mzML -O Person01_RBC_youth_NEG.mzML
+#   - ps: wget http://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/MTBLS267/Person02_RBC_youth_NEG.mzML -O Person02_RBC_youth_NEG.mzML
+#   - ps: Get-Content Person02_RBC_youth_NEG.mzML -TotalCount 50
+#   - cd ..
+#   # Get ISA validator agents for validating
+#   - ps: wget https://github.com/ISA-agents/ISAvalidator-ISAconverter-BIImanager/releases/download/1.6.5/ISA-validator-1.6.5.zip -o ISA-validator-1.6.5.zip
+#   - unzip ISA-validator-1.6.5.zip
+#   - ps: wget ftp://ftp.ebi.ac.uk/pub/databases/metabolights/submissionAgent/ISAcreatorMetaboLights.zip -o ISAcreatorMetaboLights.zip
+#   - unzip ISAcreatorMetaboLights.zip
+#   # Test using just python
+#   - "%PYTHON%\\python.exe -m mzml2isa -i data -o out_folder\\metabolights -s MTBLS267"
+#   - java -cp ISA-validator-1.6.5\isaagents_deps.jar org.isaagents.isatab.manager.SimpleManager validate out_folder\metabolights\MTBLS267 Configurations\MetaboLightsConfig20140506\
+#   # test using the windows executable (no python requred)
+#   - if %MAKE_WINEX%==1	cd scripts\for_pyinstaller\dist\
+#   - if %MAKE_WINEX%==1	mzml2isa_cli.exe -i ..\..\..\data\ -o out_folder\metabolights -s MTBLS267_exe
+#   - if %MAKE_WINEX%==1	java -cp ..\..\..\ISA-validator-1.6.5\isaagents_deps.jar org.isaagents.isatab.manager.SimpleManager validate out_folder\metabolights\MTBLS267_exe ..\..\..\Configurations\MetaboLightsConfig20140506\
+
+before_test:
+  # backports.lzma is pre-built in an alternative PyPI repository
+  - 'if %PYTHON%=="C:\\Python27"  %PYTHON%\python.exe -m pip install https://pypi.anaconda.org/carlkl/simple/backports-lzma/0.0.3/backports.lzma-0.0.3-cp27-none-win32.whl'
+  - '%PYTHON%\python.exe -m pip install -r tests\requirements.txt'
+
+test_script:
+  - '%PYTHON%\python.exe -m green'
+
+artifacts:
+  - path: ci\appveyor\dist\mzml2isa_cli.exe
+    name: mzml2isa_cli
+
+deploy:
+  provider: GitHub
+  description: 'Release description'
+  auth_token:
+    secure: a1VIb788bLXA/fLgAoEJshK1aXtGdj79BNvzPg+YfAIrYhp6yaA4gJa6vp4BpWHS
+  artifact: mzml2isa_cli
+  draft: false
+  prerelease: true
+  force_update: true
+  on:
+    branch: master
+    appveyor_repo_tag: true
